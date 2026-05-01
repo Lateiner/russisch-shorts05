@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Russisch lernen: Was vermutest du?</title>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --accent-color: #3498db;
+            --success-color: #27ae60;
+            --error-color: #e74c3c;
+            --bg-color: #f4f7f6;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--primary-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .header { text-align: center; max-width: 800px; margin-bottom: 20px; }
+        
+        .game-container {
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+            width: 100%;
+            max-width: 1000px;
+        }
+
+        .source-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            padding: 20px;
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            position: sticky;
+            top: 10px;
+            z-index: 100;
+            min-height: 50px;
+        }
+
+        .draggable {
+            background-color: var(--accent-color);
+            color: white;
+            padding: 10px 18px;
+            border-radius: 20px;
+            cursor: grab;
+            user-select: none;
+            font-weight: bold;
+            font-size: 1.1em;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .draggable.dragging { opacity: 0.5; }
+
+        .target-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+        }
+
+        .drop-zone {
+            background: #fff;
+            border: 2px dashed #bdc3c7;
+            border-radius: 15px;
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 280px;
+            transition: all 0.2s ease;
+        }
+
+        .drop-zone.drag-over {
+            border-color: var(--accent-color);
+            background: #ecf0f1;
+            transform: scale(1.02);
+        }
+
+        .drop-zone img {
+            width: 100%;
+            height: 180px;
+            object-fit: cover;
+            border-radius: 10px;
+            margin-bottom: 10px;
+        }
+
+        .label {
+            font-size: 0.85em;
+            color: #7f8c8d;
+            text-align: center;
+            margin-bottom: 8px;
+        }
+
+        .dropped-item {
+            background-color: var(--success-color) !important;
+            cursor: default;
+            box-shadow: none;
+        }
+
+        .controls {
+            margin-top: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+        }
+
+        #feedback {
+            font-weight: bold;
+            font-size: 1.2em;
+            height: 30px;
+            text-align: center;
+        }
+
+        #restart-btn {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 8px;
+            font-size: 1em;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        #restart-btn:hover {
+            background-color: #34495e;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h2>Umgangssprachliches что (Vermutungen)</h2>
+        <p>Was vermutest du in diesen Situationen? Ziehe den passenden russischen Satz auf das Bild.</p>
+    </div>
+
+    <div class="game-container">
+        <div class="source-container" id="source-box">
+            <div class="draggable" draggable="true" id="p1" data-target="hot">Что, жарко?</div>
+            <div class="draggable" draggable="true" id="p2" data-target="cold">Что, холодно?</div>
+            <div class="draggable" draggable="true" id="p3" data-target="tired">Что, устал?</div>
+            <div class="draggable" draggable="true" id="p4" data-target="sad">Что, грустно?</div>
+            <div class="draggable" draggable="true" id="p5" data-target="hungry">Что, хочешь есть?</div>
+            <div class="draggable" draggable="true" id="p6" data-target="busy">Что, работаешь?</div>
+        </div>
+
+        <div class="target-grid">
+            <div class="drop-zone" data-accept="sad">
+                <img src="bedrückt.jpg" alt="Traurig">
+                <div class="label">Situation: Bedrückt sein</div>
+            </div>
+            <div class="drop-zone" data-accept="hot">
+                <img src="Hitze.jpg" alt="Hitze">
+                <div class="label">Situation: Große Hitze</div>
+            </div>
+            <div class="drop-zone" data-accept="cold">
+                <img src="Kälte.jpg" alt="Kälte">
+                <div class="label">Situation: Kälte</div>
+            </div>
+            <div class="drop-zone" data-accept="busy">
+                <img src="konzentriert.jpg" alt="Arbeit">
+                <div class="label">Situation: Konzentriert arbeiten</div>
+            </div>
+            <div class="drop-zone" data-accept="hungry">
+                <img src="Magenknurren.jpg" alt="Hunger">
+                <div class="label">Situation: Magenknurren</div>
+            </div>
+            <div class="drop-zone" data-accept="tired">
+                <img src="Müde.jpg" alt="Müdigkeit">
+                <div class="label">Situation: Müde sein</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="controls">
+        <div id="feedback"></div>
+        <button id="restart-btn">Neustart</button>
+    </div>
+
+    <script>
+        const draggables = document.querySelectorAll('.draggable');
+        const dropZones = document.querySelectorAll('.drop-zone');
+        const feedback = document.getElementById('feedback');
+        const restartBtn = document.getElementById('restart-btn');
+        const sourceBox = document.getElementById('source-box');
+
+        function initDragEvents(el) {
+            el.addEventListener('dragstart', (e) => {
+                el.classList.add('dragging');
+                e.dataTransfer.setData('text/plain', el.id);
+            });
+            el.addEventListener('dragend', () => el.classList.remove('dragging'));
+        }
+
+        draggables.forEach(initDragEvents);
+
+        dropZones.forEach(zone => {
+            zone.addEventListener('dragover', e => {
+                e.preventDefault();
+                zone.classList.add('drag-over');
+            });
+
+            zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+
+            zone.addEventListener('drop', e => {
+                e.preventDefault();
+                zone.classList.remove('drag-over');
+                
+                const id = e.dataTransfer.getData('text/plain');
+                const element = document.getElementById(id);
+                
+                if (element && element.dataset.target === zone.dataset.accept) {
+                    zone.appendChild(element);
+                    element.classList.add('dropped-item');
+                    element.draggable = false;
+                    showFeedback("Richtig! ✓", "var(--success-color)");
+                    checkWin();
+                } else {
+                    showFeedback("Das passt nicht zu dieser Situation. ✗", "var(--error-color)");
+                }
+            });
+        });
+
+        function showFeedback(text, color) {
+            feedback.textContent = text;
+            feedback.style.color = color;
+        }
+
+        function checkWin() {
+            const remaining = sourceBox.querySelectorAll('.draggable').length;
+            if (remaining === 0) {
+                showFeedback("Hervorragend! Du hast alle Situationen richtig erkannt.", "var(--primary-color)");
+            }
+        }
+
+        restartBtn.addEventListener('click', () => {
+            // Alle Kacheln zurück in die Source-Box verschieben
+            const allItems = document.querySelectorAll('.draggable');
+            allItems.forEach(item => {
+                item.classList.remove('dropped-item');
+                item.draggable = true;
+                sourceBox.appendChild(item);
+            });
+            showFeedback("", "");
+        });
+    </script>
+</body>
+</html>
