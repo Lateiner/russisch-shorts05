@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Russisch Quiz: Nuancen erkennen</title>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --accent-color: #3498db;
+            --success-color: #27ae60;
+            --error-color: #e74c3c;
+            --bg-color: #f4f7f6;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--primary-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .quiz-container {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 600px;
+            text-align: center;
+        }
+
+        .question-box {
+            margin-bottom: 25px;
+            padding: 20px;
+            background: #ecf0f1;
+            border-radius: 10px;
+        }
+
+        .russian-text {
+            font-size: 1.5rem;
+            font-weight: bold;
+            display: block;
+            margin-bottom: 10px;
+        }
+
+        .instruction {
+            font-style: italic;
+            color: #7f8c8d;
+        }
+
+        .options-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 15px;
+        }
+
+        .option-btn {
+            background: white;
+            border: 2px solid var(--accent-color);
+            color: var(--primary-color);
+            padding: 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1.1rem;
+            transition: all 0.2s ease;
+            outline: none;
+        }
+
+        .option-btn:hover:not(:disabled) {
+            background: var(--accent-color);
+            color: white;
+        }
+
+        .option-btn.correct {
+            background-color: var(--success-color) !important;
+            border-color: var(--success-color) !important;
+            color: white;
+        }
+
+        .option-btn.wrong {
+            background-color: var(--error-color) !important;
+            border-color: var(--error-color) !important;
+            color: white;
+        }
+
+        #feedback {
+            margin-top: 20px;
+            min-height: 60px;
+            font-weight: bold;
+        }
+
+        .progress {
+            margin-bottom: 15px;
+            font-size: 0.9rem;
+            color: #95a5a6;
+        }
+
+        #next-btn, #restart-btn {
+            margin-top: 20px;
+            padding: 12px 25px;
+            border: none;
+            border-radius: 5px;
+            background: var(--primary-color);
+            color: white;
+            cursor: pointer;
+            display: none;
+        }
+
+        #next-btn:hover, #restart-btn:hover {
+            background: #34495e;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="quiz-container">
+        <div class="progress">Satz <span id="current-idx">1</span> von 6</div>
+        <div class="question-box">
+            <span class="russian-text" id="question-text">Он не работает.</span>
+            <span class="instruction">Welche Nuance drückt dieser Satz aus?</span>
+        </div>
+
+        <div class="options-grid" id="options">
+            <button class="option-btn" onclick="checkAnswer(true)">Eine Vermutung (Annahme)</button>
+            <button class="option-btn" onclick="checkAnswer(false)">Eine reine Information (Fakt)</button>
+        </div>
+
+        <div id="feedback"></div>
+        <button id="next-btn" onclick="nextQuestion()">Nächster Satz</button>
+        <button id="restart-btn" onclick="restartQuiz()">Quiz neu starten</button>
+    </div>
+
+    <script>
+        const quizData = [
+            { text: "Он не работает.", isGuess: false, info: "Das ist eine sachliche Information ohne weitere Nuancen." },
+            { text: "А он что, не работает сегодня?", isGuess: true, info: "Das 'что' zeigt an, dass der Sprecher vermutet, dass er heute frei hat." },
+            { text: "На улице жарко.", isGuess: false, info: "Eine einfache Wetterbeobachtung." },
+            { text: "Что, жарко?", isGuess: true, info: "Man vermutet, dass dem Gegenüber heiß ist und bittet um Bestätigung." },
+            { text: "Ты устал.", isGuess: false, info: "Eine direkte Feststellung des Zustands." },
+            { text: "Что, устал?", isGuess: true, info: "Man interpretiert das Gähnen des anderen als Müdigkeit." }
+        ];
+
+        let currentIndex = 0;
+
+        function checkAnswer(selectedIsGuess) {
+            const current = quizData[currentIndex];
+            const buttons = document.querySelectorAll('.option-btn');
+            const isCorrect = (selectedIsGuess === current.isGuess);
+
+            buttons.forEach(btn => btn.disabled = true);
+
+            const feedbackEl = document.getElementById('feedback');
+            if (isCorrect) {
+                feedbackEl.innerHTML = `<span style="color:var(--success-color)">Richtig! ✓</span><br><small>${current.info}</small>`;
+                event.target.classList.add('correct');
+            } else {
+                feedbackEl.innerHTML = `<span style="color:var(--error-color)">Nicht ganz. ✗</span><br><small>${current.info}</small>`;
+                event.target.classList.add('wrong');
+            }
+
+            document.getElementById('next-btn').style.display = 'inline-block';
+        }
+
+        function nextQuestion() {
+            currentIndex++;
+            if (currentIndex < quizData.length) {
+                updateUI();
+            } else {
+                showResult();
+            }
+        }
+
+        function updateUI() {
+            const current = quizData[currentIndex];
+            document.getElementById('question-text').textContent = current.text;
+            document.getElementById('current-idx').textContent = currentIndex + 1;
+            document.getElementById('feedback').textContent = '';
+            document.getElementById('next-btn').style.display = 'none';
+            document.getElementById('options').style.display = 'grid';
+            
+            const buttons = document.querySelectorAll('.option-btn');
+            buttons.forEach(btn => {
+                btn.disabled = false;
+                btn.classList.remove('correct', 'wrong');
+            });
+        }
+
+        function showResult() {
+            document.getElementById('question-text').textContent = "Hervorragend!";
+            document.getElementById('options').style.display = 'none';
+            document.getElementById('feedback').textContent = "Du hast alle 6 Nuancen erfolgreich unterschieden.";
+            document.getElementById('next-btn').style.display = 'none';
+            document.getElementById('restart-btn').style.display = 'inline-block';
+        }
+
+        function restartQuiz() {
+            currentIndex = 0;
+            document.getElementById('restart-btn').style.display = 'none';
+            updateUI();
+        }
+    </script>
+</body>
+</html>
