@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Russisch Audio-Quiz: Intonation</title>
+    <style>
+        :root {
+            --primary: #2c3e50;
+            --accent: #3498db;
+            --success: #27ae60;
+            --error: #e74c3c;
+            --bg: #f4f7f6;
+        }
+
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: var(--bg); display: flex; flex-direction: column; align-items: center; padding: 20px; margin: 0; }
+        
+        .quiz-card {
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 500px;
+            text-align: center;
+        }
+
+        .audio-controls {
+            margin: 25px 0;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 15px;
+            border: 2px solid var(--accent);
+        }
+
+        .play-btn {
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 50px;
+            font-size: 1.2rem;
+            cursor: pointer;
+            transition: transform 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto;
+        }
+
+        .play-btn:active { transform: scale(0.95); }
+
+        .options {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .option-btn {
+            background: white;
+            border: 2px solid var(--primary);
+            padding: 15px;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .option-btn:hover:not(:disabled) {
+            background: var(--primary);
+            color: white;
+        }
+
+        .option-btn.correct { background: var(--success); border-color: var(--success); color: white; }
+        .option-btn.wrong { background: var(--error); border-color: var(--error); color: white; }
+
+        #feedback {
+            margin-top: 20px;
+            min-height: 50px;
+            font-weight: 500;
+            line-height: 1.4;
+        }
+
+        .nav-btn {
+            margin-top: 20px;
+            padding: 10px 25px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            display: none;
+        }
+
+        .progress { margin-bottom: 15px; color: #7f8c8d; font-size: 0.9rem; }
+    </style>
+</head>
+<body>
+
+    <div class="quiz-card">
+        <div class="progress" id="progress">Frage 1 von 6</div>
+        <h2>Hör genau hin!</h2>
+        <p>Hör dir den Satz an. Ist es eine sachliche Information oder eine Vermutung?</p>
+
+        <div class="audio-controls">
+            <button class="play-btn" onclick="playAudio()">
+                <span>▶ Audio abspielen</span>
+            </button>
+            <audio id="audio-player"></audio>
+        </div>
+
+        <div class="options" id="options">
+            <button class="option-btn" onclick="checkAnswer(false)">Reine Information / Fakt</button>
+            <button class="option-btn" onclick="checkAnswer(true)">Vermutung / Meinung</button>
+        </div>
+
+        <div id="feedback"></div>
+        <button id="next-btn" class="nav-btn" onclick="nextQuestion()">Nächster Satz</button>
+        <button id="restart-btn" class="nav-btn" onclick="resetQuiz()">Neu starten</button>
+    </div>
+
+    <script>
+        const quizData = [
+            { file: "audio1.mp3", isGuess: false, text: "Он не работает.", note: "Neutral gesprochen: Faktische Information." },
+            { file: "audio2.mp3", isGuess: true, text: "Что, не работает?", note: "Fragender Unterton: Hier wird vermutet, dass er nicht arbeitet." },
+            { file: "audio3.mp3", isGuess: false, text: "На улице холодно.", note: "Feststellung der Temperatur." },
+            { file: "audio4.mp3", isGuess: true, text: "Что, холодно?", note: "Der Sprecher sieht jemanden zittern und vermutet die Kälte." },
+            { file: "audio5.mp3", isGuess: true, text: "Что, устал?", note: "Typische Vermutung basierend auf dem Aussehen des Gegenübers." },
+            { file: "audio6.mp3", isGuess: false, text: "Я иду домой.", note: "Einfache Aussage über eine Handlung." }
+        ];
+
+        let currentIdx = 0;
+        const player = document.getElementById('audio-player');
+        const feedback = document.getElementById('feedback');
+        const nextBtn = document.getElementById('next-btn');
+
+        function playAudio() {
+            player.src = quizData[currentIdx].file;
+            player.play();
+        }
+
+        function checkAnswer(userIsGuess) {
+            const correct = userIsGuess === quizData[currentIdx].isGuess;
+            const buttons = document.querySelectorAll('.option-btn');
+            
+            buttons.forEach(btn => btn.disabled = true);
+            
+            if (correct) {
+                feedback.innerHTML = `<span style="color:var(--success)">Richtig! ✓</span><br><small>${quizData[currentIdx].text}<br>${quizData[currentIdx].note}</small>`;
+            } else {
+                feedback.innerHTML = `<span style="color:var(--error)">Nicht ganz. ✗</span><br><small>${quizData[currentIdx].text}<br>${quizData[currentIdx].note}</small>`;
+            }
+
+            nextBtn.style.display = "inline-block";
+        }
+
+        function nextQuestion() {
+            currentIdx++;
+            if (currentIdx < quizData.length) {
+                updateUI();
+            } else {
+                showResult();
+            }
+        }
+
+        function updateUI() {
+            document.getElementById('progress').textContent = `Frage ${currentIdx + 1} von ${quizData.length}`;
+            feedback.innerHTML = "";
+            nextBtn.style.display = "none";
+            const buttons = document.querySelectorAll('.option-btn');
+            buttons.forEach(btn => {
+                btn.disabled = false;
+                btn.className = 'option-btn';
+            });
+        }
+
+        function showResult() {
+            document.querySelector('h2').textContent = "Quiz beendet!";
+            document.querySelector('.audio-controls').style.display = "none";
+            document.getElementById('options').style.display = "none";
+            feedback.textContent = "Du hast alle Hörbeispiele analysiert.";
+            document.getElementById('restart-btn').style.display = "inline-block";
+            nextBtn.style.display = "none";
+        }
+
+        function resetQuiz() {
+            currentIdx = 0;
+            document.querySelector('.audio-controls').style.display = "block";
+            document.getElementById('options').style.display = "grid";
+            document.getElementById('restart-btn').style.display = "none";
+            document.querySelector('h2').textContent = "Hör genau hin!";
+            updateUI();
+        }
+    </script>
+</body>
+</html>
