@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Russisch Chat-Quiz</title>
+    <style>
+        :root {
+            --bg-color: #e5ddd5;
+            --chat-self: #dcf8c6;
+            --chat-other: #ffffff;
+            --primary: #075e54;
+            --accent: #34b7f1;
+            --success: #27ae60;
+            --error: #e74c3c;
+        }
+
+        body { font-family: 'Segoe UI', Helvetica, sans-serif; background-color: #f0f2f5; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
+
+        .chat-container {
+            width: 100%;
+            max-width: 450px;
+            background: var(--bg-color);
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .chat-header { background: var(--primary); color: white; padding: 15px; font-weight: bold; text-align: center; }
+
+        .chat-window { padding: 15px; display: flex; flex-direction: column; gap: 10px; min-height: 300px; }
+
+        .bubble { padding: 10px 15px; border-radius: 10px; max-width: 80%; font-size: 1rem; position: relative; line-height: 1.4; }
+        .other { align-self: flex-start; background: var(--chat-other); box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
+        .self { align-self: flex-end; background: var(--chat-self); box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
+
+        .empty-slot {
+            border: 2px dashed #999;
+            background: rgba(255,255,255,0.5);
+            color: #666;
+            text-align: center;
+            font-style: italic;
+            padding: 10px;
+            border-radius: 10px;
+            align-self: flex-end;
+            width: 80%;
+        }
+
+        .options-area { background: #fff; padding: 20px; border-top: 1px solid #ddd; width: 100%; box-sizing: border-box; }
+
+        .option-btn {
+            display: block;
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 10px;
+            border: 2px solid var(--accent);
+            border-radius: 25px;
+            background: white;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.2s;
+        }
+
+        .option-btn:hover:not(:disabled) { background: var(--accent); color: white; }
+        .option-btn.correct { background: var(--success); border-color: var(--success); color: white; }
+        .option-btn.wrong { background: var(--error); border-color: var(--error); color: white; }
+
+        #feedback { text-align: center; font-weight: bold; margin-bottom: 10px; min-height: 24px; }
+
+        .nav-btn {
+            width: 100%;
+            padding: 12px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            display: none;
+            font-weight: bold;
+            margin-top: 5px;
+        }
+
+        .restart-btn {
+            background: #55acee;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="chat-container">
+        <div class="chat-header">Russisch-Chat: Vermutungen</div>
+        <div class="chat-window" id="chat-window"></div>
+        
+        <div class="options-area">
+            <div id="feedback"></div>
+            <div id="options-container"></div>
+            <button id="next-btn" class="nav-btn" onclick="nextDialog()">Nächster Dialog</button>
+            <button id="restart-btn" class="nav-btn restart-btn" onclick="resetGame()">Spiel neu starten</button>
+        </div>
+    </div>
+
+    <script>
+        const dialogs = [
+            {
+                partner: "Я сегодня не приду в школу. Плохо себя чувствую.",
+                options: ["Что, заболел?", "Как дела?", "Где ты?"],
+                correct: 0
+            },
+            {
+                partner: "Ой, я забыл кошелёк дома...",
+                options: ["Кто это?", "Что, денег нет?", "Что ты делаешь?"],
+                correct: 1
+            },
+            {
+                partner: "Я иду спать. *Зевает*",
+                options: ["Что, жарко?", "Что, устал?", "Что, заболел?"],
+                correct: 1
+            },
+            {
+                partner: "На улице такой сильный снег!",
+                options: ["Что, холодно?", "Что, работаешь?", "Что, хочешь есть?"],
+                correct: 0
+            }
+        ];
+
+        let currentIdx = 0;
+
+        function renderDialog() {
+            const chatWindow = document.getElementById('chat-window');
+            const optionsContainer = document.getElementById('options-container');
+            const current = dialogs[currentIdx];
+
+            chatWindow.innerHTML = `
+                <div class="bubble other">${current.partner}</div>
+                <div class="empty-slot" id="slot">Wähle die passende Antwort...</div>
+            `;
+
+            optionsContainer.innerHTML = '';
+            current.options.forEach((opt, idx) => {
+                const btn = document.createElement('button');
+                btn.className = 'option-btn';
+                btn.textContent = opt;
+                btn.onclick = () => checkAnswer(idx, btn);
+                optionsContainer.appendChild(btn);
+            });
+
+            document.getElementById('feedback').textContent = "";
+            document.getElementById('next-btn').style.display = "none";
+            document.getElementById('restart-btn').style.display = "none";
+        }
+
+        function checkAnswer(selectedIdx, btn) {
+            const current = dialogs[currentIdx];
+            const buttons = document.querySelectorAll('.option-btn');
+            const slot = document.getElementById('slot');
+            
+            buttons.forEach(b => b.disabled = true);
+
+            if (selectedIdx === current.correct) {
+                btn.classList.add('correct');
+                slot.textContent = btn.textContent;
+                slot.className = "bubble self";
+                document.getElementById('feedback').textContent = "Richtig! ✓";
+                document.getElementById('feedback').style.color = "var(--success)";
+            } else {
+                btn.classList.add('wrong');
+                document.getElementById('feedback').textContent = "Passt nicht ganz. ✗";
+                document.getElementById('feedback').style.color = "var(--error)";
+            }
+
+            document.getElementById('next-btn').style.display = "block";
+        }
+
+        function nextDialog() {
+            currentIdx++;
+            if (currentIdx < dialogs.length) {
+                renderDialog();
+            } else {
+                showFinished();
+            }
+        }
+
+        function showFinished() {
+            document.getElementById('chat-window').innerHTML = `
+                <div class="bubble other">Super gemacht! Du hast alle Dialoge richtig ergänzt. 🔥</div>
+            `;
+            document.getElementById('options-container').innerHTML = "";
+            document.getElementById('feedback').textContent = "Übung abgeschlossen!";
+            document.getElementById('feedback').style.color = "var(--primary)";
+            document.getElementById('next-btn').style.display = "none";
+            document.getElementById('restart-btn').style.display = "block";
+        }
+
+        function resetGame() {
+            currentIdx = 0;
+            renderDialog();
+        }
+
+        window.onload = renderDialog;
+    </script>
+</body>
+</html>
