@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Russisch: Visueller Kontext (6 Aufgaben)</title>
+    <style>
+        :root {
+            --primary: #2c3e50;
+            --accent: #3498db;
+            --success: #27ae60;
+            --error: #e74c3c;
+            --bg: #f0f4f8;
+        }
+
+        body { 
+            font-family: 'Segoe UI', sans-serif; 
+            background: var(--bg); 
+            margin: 0; 
+            padding: 20px; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+        }
+
+        .quiz-container {
+            width: 100%;
+            max-width: 800px;
+            background: white;
+            padding: 25px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        .question-text {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: var(--primary);
+            margin: 20px 0;
+            padding: 10px;
+            border-bottom: 2px solid #eee;
+        }
+
+        .image-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 15px;
+            margin-top: 25px;
+        }
+
+        .image-card {
+            background: #fff;
+            border: 3px solid #eee;
+            border-radius: 15px;
+            padding: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .image-card:hover:not(.disabled) {
+            transform: translateY(-5px);
+            border-color: var(--accent);
+        }
+
+        .image-card.correct {
+            border-color: var(--success);
+            background-color: #e8f5e9;
+        }
+
+        .image-card.wrong {
+            border-color: var(--error);
+            background-color: #ffebee;
+            opacity: 0.6;
+        }
+
+        .visual-placeholder {
+            font-size: 70px;
+            margin-bottom: 10px;
+            user-select: none;
+        }
+
+        #feedback {
+            margin-top: 20px;
+            font-size: 1.1rem;
+            font-weight: 500;
+            min-height: 25px;
+        }
+
+        .nav-btn {
+            margin-top: 20px;
+            padding: 12px 40px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            font-size: 1rem;
+            display: none;
+            font-weight: bold;
+        }
+
+        .progress { color: #7f8c8d; font-size: 0.9rem; margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+
+    <div class="quiz-container">
+        <div class="progress" id="progress">Aufgabe 1 von 6</div>
+        <p>Welches Bild passt zur Vermutung mit <b>что</b>?</p>
+        <div class="question-text" id="question-display">Что, болит?</div>
+
+        <div class="image-grid" id="image-grid"></div>
+
+        <div id="feedback"></div>
+        <button id="next-btn" class="nav-btn" onclick="nextQuestion()">Nächste Frage</button>
+        <button id="restart-btn" class="nav-btn" onclick="resetQuiz()">Neustart</button>
+    </div>
+
+    <script>
+        const questions = [
+            {
+                text: "Что, болит?",
+                options: [
+                    { visual: "😄", label: "Lachen", correct: false },
+                    { visual: "🤕", label: "Schmerz", correct: true },
+                    { visual: "😴", label: "Schlafen", correct: false }
+                ],
+                explanation: "Richtig! 'Tut es etwa weh?' passt zum Emoji mit dem Verband."
+            },
+            {
+                text: "Что, поёшь?",
+                options: [
+                    { visual: "🎤", label: "Singen", correct: true },
+                    { visual: "🍕", label: "Essen", correct: false },
+                    { visual: "🚲", label: "Radfahren", correct: false }
+                ],
+                explanation: "Genau! 'Singst du etwa?' passt zum Mikrofon."
+            },
+            {
+                text: "Что, холодно?",
+                options: [
+                    { visual: "☀️", label: "Sonne", correct: false },
+                    { visual: "🥶", label: "Frieren", correct: true },
+                    { visual: "🔥", label: "Feuer", correct: false }
+                ],
+                explanation: "Richtig. 'Ist dir etwa kalt?' erkennt man am frierenden Gesicht."
+            },
+            {
+                text: "Что, работаешь?",
+                options: [
+                    { visual: "🏖️", label: "Urlaub", correct: false },
+                    { visual: "🍿", label: "Kino", correct: false },
+                    { visual: "💻", label: "Laptop", correct: true }
+                ],
+                explanation: "Sehr gut! 'Arbeitest du wohl?' passt zum Laptop-Arbeitsplatz."
+            },
+            {
+                text: "Что, отдыхаешь?",
+                options: [
+                    { visual: "🏃", label: "Laufen", correct: false },
+                    { visual: "🍹", label: "Relaxen", correct: true },
+                    { visual: "🧹", label: "Putzen", correct: false }
+                ],
+                explanation: "Korrekt! 'Ruhst du dich etwa aus?' passt zum entspannten Drink."
+            },
+            {
+                text: "Что, хочешь есть?",
+                options: [
+                    { visual: "🍔", label: "Burger", correct: true },
+                    { visual: "⚽", label: "Fußball", correct: false },
+                    { visual: "📚", label: "Lesen", correct: false }
+                ],
+                explanation: "Richtig! 'Hast du vielleicht Hunger?' passt zum Essen."
+            }
+        ];
+
+        let currentIdx = 0;
+
+        function loadQuestion() {
+            const q = questions[currentIdx];
+            document.getElementById('question-display').textContent = q.text;
+            document.getElementById('progress').textContent = `Aufgabe ${currentIdx + 1} von ${questions.length}`;
+            document.getElementById('feedback').textContent = "";
+            document.getElementById('next-btn').style.display = "none";
+            document.getElementById('restart-btn').style.display = "none";
+            
+            const grid = document.getElementById('image-grid');
+            grid.innerHTML = '';
+
+            q.options.forEach((opt, index) => {
+                const card = document.createElement('div');
+                card.className = 'image-card';
+                card.innerHTML = `
+                    <div class="visual-placeholder">${opt.visual}</div>
+                    <span>${opt.label}</span>
+                `;
+                card.onclick = () => checkAnswer(index, card);
+                grid.appendChild(card);
+            });
+        }
+
+        function checkAnswer(index, selectedCard) {
+            const q = questions[currentIdx];
+            const cards = document.querySelectorAll('.image-card');
+            
+            cards.forEach(c => {
+                c.classList.add('disabled');
+                c.style.pointerEvents = 'none';
+            });
+
+            if (q.options[index].correct) {
+                selectedCard.classList.add('correct');
+                document.getElementById('feedback').innerHTML = `<span style="color:var(--success)">${q.explanation}</span>`;
+            } else {
+                selectedCard.classList.add('wrong');
+                document.getElementById('feedback').innerHTML = `<span style="color:var(--error)">Nicht ganz. Schau dir die Emojis nochmal an.</span>`;
+                cards.forEach((c, i) => {
+                    if(q.options[i].correct) c.style.borderColor = "var(--success)";
+                });
+            }
+
+            document.getElementById('next-btn').style.display = "inline-block";
+        }
+
+        function nextQuestion() {
+            currentIdx++;
+            if (currentIdx < questions.length) {
+                loadQuestion();
+            } else {
+                showEnd();
+            }
+        }
+
+        function showEnd() {
+            document.getElementById('question-display').textContent = "Hervorragend!";
+            document.getElementById('image-grid').innerHTML = "<div style='grid-column: 1/-1; font-size: 5rem;'>🏆</div>";
+            document.getElementById('feedback').textContent = "Du hast alle 6 visuellen Situationen richtig gedeutet.";
+            document.getElementById('next-btn').style.display = "none";
+            document.getElementById('restart-btn').style.display = "inline-block";
+        }
+
+        function resetQuiz() {
+            currentIdx = 0;
+            loadQuestion();
+        }
+
+        window.onload = loadQuestion;
+    </script>
+</body>
+</html>
