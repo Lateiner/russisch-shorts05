@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Russisch Kontext-Check</title>
+    <style>
+        :root {
+            --primary: #2c3e50;
+            --accent: #3498db;
+            --success: #27ae60;
+            --error: #e74c3c;
+            --bg: #f4f7f6;
+            --card-bg: #ffffff;
+        }
+
+        body { 
+            font-family: 'Segoe UI', Roboto, sans-serif; 
+            background: var(--bg); 
+            margin: 0; 
+            padding: 20px; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+        }
+
+        .container {
+            width: 100%;
+            max-width: 600px;
+            text-align: center;
+        }
+
+        .check-card {
+            background: var(--card-bg);
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            min-height: 250px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+
+        .situation-box {
+            background: #edf2f7;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-style: italic;
+            color: #4a5568;
+            border-left: 5px solid var(--accent);
+        }
+
+        .russian-sentence {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--primary);
+            margin: 10px 0;
+        }
+
+        .btn-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .action-btn {
+            padding: 15px;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s, opacity 0.2s;
+            color: white;
+        }
+
+        .btn-true { background-color: var(--success); }
+        .btn-false { background-color: var(--error); }
+        .action-btn:active { transform: scale(0.95); }
+        .action-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        #feedback {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 10px;
+            font-weight: 500;
+            display: none;
+        }
+
+        .nav-btn {
+            margin-top: 20px;
+            padding: 12px 30px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #cbd5e0;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--accent);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h2>Logik-Check: Passt das?</h2>
+        <p>Entscheide, ob der russische Satz zur Situation passt.</p>
+
+        <div class="progress-bar">
+            <div id="progress-fill" class="progress-fill"></div>
+        </div>
+
+        <div class="check-card" id="card">
+            <div class="situation-box" id="situation">Lade Situation...</div>
+            <div class="russian-sentence" id="sentence">Lade Satz...</div>
+            
+            <div class="btn-group">
+                <button class="action-btn btn-true" onclick="handleGuess(true)">Logisch ✓</button>
+                <button class="action-btn btn-false" onclick="handleGuess(false)">Unlogisch ✗</button>
+            </div>
+        </div>
+
+        <div id="feedback"></div>
+        <button id="next-btn" class="nav-btn" style="display: none;" onclick="nextQuestion()">Nächste Aufgabe</button>
+        <button id="restart-btn" class="nav-btn" style="display: none;" onclick="resetGame()">Neustarten</button>
+    </div>
+
+    <script>
+        const tasks = [
+            {
+                situation: "Anton isst mit großem Appetit drei Portionen Suppe.",
+                sentence: "Что, не вкусно?",
+                correct: false,
+                explanation: "Unlogisch: Wenn er drei Portionen isst, schmeckt es ihm offensichtlich!"
+            },
+            {
+                situation: "Jemand kommt klatschnass von draußen rein.",
+                sentence: "Что, идёт дождь?",
+                correct: true,
+                explanation: "Logisch: Die Nässe lässt vermuten, dass es draußen regnet."
+            },
+            {
+                situation: "Dein Freund zittert und seine Zähne klappern.",
+                sentence: "Что, жарко?",
+                correct: false,
+                explanation: "Unlogisch: Zittern deutet auf Kälte hin, nicht auf Hitze."
+            },
+            {
+                situation: "Ein Kollege räumt schweigend seinen Schreibtisch leer.",
+                sentence: "Что, увольняешься?",
+                correct: true,
+                explanation: "Logisch: Das Leerräumen lässt die Vermutung zu, dass er kündigt."
+            },
+            {
+                situation: "Jemand trinkt gierig ein großes Glas Wasser.",
+                sentence: "Что, хочешь пить?",
+                correct: true,
+                explanation: "Logisch: Wer so trinkt, hat vermutlich Durst."
+            }
+        ];
+
+        let currentIdx = 0;
+
+        function updateUI() {
+            const task = tasks[currentIdx];
+            document.getElementById('situation').textContent = task.situation;
+            document.getElementById('sentence').textContent = task.sentence;
+            document.getElementById('feedback').style.display = 'none';
+            document.getElementById('next-btn').style.display = 'none';
+            document.getElementById('progress-fill').style.width = `${((currentIdx) / tasks.length) * 100}%`;
+            
+            const buttons = document.querySelectorAll('.action-btn');
+            buttons.forEach(btn => btn.disabled = false);
+        }
+
+        function handleGuess(userGuess) {
+            const task = tasks[currentIdx];
+            const feedback = document.getElementById('feedback');
+            const buttons = document.querySelectorAll('.action-btn');
+            
+            buttons.forEach(btn => btn.disabled = true);
+            feedback.style.display = 'block';
+
+            if (userGuess === task.correct) {
+                feedback.style.backgroundColor = '#c6f6d5';
+                feedback.style.color = '#22543d';
+                feedback.innerHTML = `<strong>Richtig!</strong><br>${task.explanation}`;
+            } else {
+                feedback.style.backgroundColor = '#fed7d7';
+                feedback.style.color = '#822727';
+                feedback.innerHTML = `<strong>Leider falsch.</strong><br>${task.explanation}`;
+            }
+
+            document.getElementById('next-btn').style.display = 'inline-block';
+            document.getElementById('progress-fill').style.width = `${((currentIdx + 1) / tasks.length) * 100}%`;
+        }
+
+        function nextQuestion() {
+            currentIdx++;
+            if (currentIdx < tasks.length) {
+                updateUI();
+            } else {
+                showFinished();
+            }
+        }
+
+        function showFinished() {
+            document.getElementById('card').style.display = 'none';
+            document.getElementById('feedback').innerHTML = "<h3>Klasse!</h3>Du hast alle Situationen analysiert und verstanden, wann die Vermutung mit 'что' Sinn ergibt.";
+            document.getElementById('next-btn').style.display = 'none';
+            document.getElementById('restart-btn').style.display = 'inline-block';
+        }
+
+        function resetGame() {
+            currentIdx = 0;
+            document.getElementById('card').style.display = 'flex';
+            document.getElementById('restart-btn').style.display = 'none';
+            updateUI();
+        }
+
+        // Init
+        window.onload = updateUI;
+    </script>
+</body>
+</html>
