@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Russisch Zuordnung: Nuancen</title>
+    <style>
+        :root {
+            --primary: #2c3e50;
+            --accent: #3498db;
+            --success: #27ae60;
+            --bg: #f4f7f6;
+            --ru-color: #e74c3c;
+            --de-color: #2980b9;
+        }
+
+        body { 
+            font-family: 'Segoe UI', Tahoma, sans-serif; 
+            background: var(--bg); 
+            margin: 0; 
+            padding: 20px; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+        }
+
+        .header { text-align: center; max-width: 600px; margin-bottom: 20px; }
+
+        .game-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            justify-content: center;
+            width: 100%;
+            max-width: 900px;
+        }
+
+        .column {
+            flex: 1;
+            min-width: 300px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .item {
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            border: 2px solid #ddd;
+            cursor: pointer;
+            text-align: left; /* Textanfang links */
+            transition: all 0.3s ease;
+            user-select: none;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+
+        .item:hover { border-color: var(--accent); transform: translateX(5px); }
+        
+        .item.selected {
+            border-color: var(--accent);
+            background-color: #ebf8ff;
+            transform: scale(1.02);
+        }
+
+        .item.matched {
+            opacity: 0;
+            transform: scale(0.8);
+            pointer-events: none;
+            transition: opacity 1s ease, transform 1s ease;
+        }
+
+        .ru-item { border-left: 5px solid var(--ru-color); }
+        .de-item { border-left: 5px solid var(--de-color); }
+
+        #feedback {
+            margin-top: 20px;
+            font-weight: bold;
+            height: 30px;
+            color: var(--success);
+        }
+
+        .restart-btn {
+            margin-top: 20px;
+            padding: 12px 25px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            display: none;
+        }
+
+        @media (max-width: 600px) {
+            .column { min-width: 100%; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h2>Nuancen erkennen</h2>
+        <p>Wähle erst einen russischen Satz und dann die passende deutsche Entsprechung. Achte auf Wörter wie „etwa“ oder „wohl“.</p>
+    </div>
+
+    <div id="feedback"></div>
+
+    <div class="game-container">
+        <div class="column" id="ru-column"></div>
+        <div class="column" id="de-column"></div>
+    </div>
+
+    <button id="restart-btn" class="restart-btn" onclick="initGame()">Nochmal spielen</button>
+
+    <script>
+        const pairs = [
+            { ru: "Что, заболел?", de: "Bist du etwa krank geworden?" },
+            { ru: "Что, работаешь?", de: "Arbeitest du wohl gerade?" },
+            { ru: "Что, не хочешь?", de: "Willst du etwa nicht?" },
+            { ru: "Что, забыл?", de: "Hast du es wohl vergessen?" },
+            { ru: "Что, холодно?", de: "Ist dir vielleicht kalt?" },
+            { ru: "Что, денег нет?", de: "Hast du etwa kein Geld dabei?" }
+        ];
+
+        let selectedRu = null;
+        let selectedDe = null;
+        let matches = 0;
+
+        function shuffle(array) {
+            return array.sort(() => Math.random() - 0.5);
+        }
+
+        function initGame() {
+            const ruCol = document.getElementById('ru-column');
+            const deCol = document.getElementById('de-column');
+            const restartBtn = document.getElementById('restart-btn');
+            const feedback = document.getElementById('feedback');
+            
+            ruCol.innerHTML = '';
+            deCol.innerHTML = '';
+            feedback.textContent = '';
+            restartBtn.style.display = 'none';
+            matches = 0;
+            selectedRu = null;
+            selectedDe = null;
+
+            const ruItems = shuffle([...pairs]);
+            const deItems = shuffle([...pairs]);
+
+            ruItems.forEach(pair => {
+                const div = document.createElement('div');
+                div.className = 'item ru-item';
+                div.textContent = pair.ru;
+                div.onclick = () => selectItem(div, 'ru', pair.ru);
+                ruCol.appendChild(div);
+            });
+
+            deItems.forEach(pair => {
+                const div = document.createElement('div');
+                div.className = 'item de-item';
+                div.textContent = pair.de;
+                div.onclick = () => selectItem(div, 'de', pair.de);
+                deCol.appendChild(div);
+            });
+        }
+
+        function selectItem(element, type, value) {
+            if (element.classList.contains('matched')) return;
+
+            if (type === 'ru') {
+                if (selectedRu) selectedRu.element.classList.remove('selected');
+                selectedRu = { element, value };
+            } else {
+                if (selectedDe) selectedDe.element.classList.remove('selected');
+                selectedDe = { element, value };
+            }
+
+            element.classList.add('selected');
+
+            if (selectedRu && selectedDe) {
+                checkMatch();
+            }
+        }
+
+        function checkMatch() {
+            const isMatch = pairs.find(p => p.ru === selectedRu.value && p.de === selectedDe.value);
+
+            if (isMatch) {
+                const el1 = selectedRu.element;
+                const el2 = selectedDe.element;
+                
+                el1.classList.add('matched');
+                el2.classList.add('matched');
+                
+                matches++;
+                document.getElementById('feedback').textContent = "Richtig kombiniert! ✓";
+                
+                if (matches === pairs.length) {
+                    document.getElementById('feedback').textContent = "Hervorragend! Alle Nuancen gefunden.";
+                    document.getElementById('restart-btn').style.display = 'block';
+                }
+            } else {
+                const el1 = selectedRu.element;
+                const el2 = selectedDe.element;
+                setTimeout(() => {
+                    el1.classList.remove('selected');
+                    el2.classList.remove('selected');
+                }, 400);
+            }
+
+            selectedRu = null;
+            selectedDe = null;
+        }
+
+        window.onload = initGame;
+    </script>
+</body>
+</html>
