@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Russisch: Satzbau-Puzzle (Sofort-Feedback)</title>
+    <style>
+        :root {
+            --primary: #2c3e50;
+            --accent: #3498db;
+            --success: #27ae60;
+            --error: #e74c3c;
+            --bg: #f4f7f6;
+        }
+
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); display: flex; flex-direction: column; align-items: center; padding: 20px; }
+        
+        .container { background: white; padding: 25px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 100%; max-width: 600px; text-align: center; }
+
+        .progress { font-size: 0.9rem; color: #7f8c8d; margin-bottom: 10px; }
+
+        .word-pool { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-bottom: 20px; min-height: 60px; padding: 15px; border: 2px dashed #bdc3c7; border-radius: 10px; background: #fafafa; }
+
+        .drop-zone { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-bottom: 20px; min-height: 70px; padding: 15px; background: #fff; border: 2px solid var(--primary); border-radius: 10px; }
+
+        .word-tile { background: var(--primary); color: white; padding: 10px 18px; border-radius: 25px; cursor: pointer; user-select: none; font-weight: bold; transition: all 0.2s; }
+        
+        .word-tile.correct-pos { background-color: var(--success) !important; }
+        .word-tile.wrong-pos { background-color: var(--error) !important; animation: shake 0.3s; }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+
+        #feedback { font-weight: bold; font-size: 1.1rem; min-height: 30px; margin-bottom: 20px; }
+
+        .btn-nav { padding: 12px 25px; background: var(--primary); border: none; color: white; border-radius: 8px; cursor: pointer; display: none; }
+        .btn-restart { padding: 8px 15px; background: #95a5a6; border: none; color: white; border-radius: 5px; cursor: pointer; margin-top: 15px; font-size: 0.8rem; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="progress" id="progress">Satz 1 von 8</div>
+        <h3 id="instruction">Bilde den Satz:</h3>
+        <p><em id="translation">"..."</em></p>
+        
+        <div class="drop-zone" id="target"></div>
+        <div class="word-pool" id="pool"></div>
+
+        <div id="feedback"></div>
+        <button id="next-btn" class="btn-nav" onclick="nextSentence()">Weiter zum nächsten Satz</button>
+        <br>
+        <button class="btn-restart" onclick="restartGame()">Übung von vorn beginnen</button>
+    </div>
+
+    <script>
+        const puzzleData = [
+            { words: ["Он", "что", "не", "работает", "?"], trans: "Arbeitet er etwa nicht?" },
+            { words: ["Что", "жарко", "?"], trans: "Ist dir etwa heiß?" },
+            { words: ["Что", "холодно", "?"], trans: "Ist dir etwa kalt?" },
+            { words: ["Что", "устал", "?"], trans: "Bist du etwa müde?" },
+            { words: ["Что", "грустно", "?"], trans: "Bist du etwa traurig?" },
+            { words: ["Что", "хочешь", "есть", "?"], trans: "Hast du etwa Hunger?" },
+            { words: ["А", "что", "ты", "делаешь", "?"], trans: "Und was machst du da etwa?" },
+            { words: ["Что", "опаздываешь", "?"], trans: "Kommst du etwa zu spät?" }
+        ];
+
+        let currentIdx = 0;
+
+        function initPuzzle() {
+            const data = puzzleData[currentIdx];
+            document.getElementById('progress').textContent = `Satz ${currentIdx + 1} von ${puzzleData.length}`;
+            document.getElementById('translation').textContent = `"${data.trans}"`;
+            document.getElementById('feedback').textContent = "Klicke die Wörter in der richtigen Reihenfolge an.";
+            document.getElementById('feedback').style.color = "var(--primary)";
+            document.getElementById('next-btn').style.display = "none";
+            
+            const pool = document.getElementById('pool');
+            const target = document.getElementById('target');
+            pool.innerHTML = "";
+            target.innerHTML = "";
+
+            const shuffled = [...data.words].sort(() => Math.random() - 0.5);
+            
+            shuffled.forEach(word => {
+                const tile = document.createElement('div');
+                tile.className = 'word-tile';
+                tile.textContent = word;
+                tile.onclick = () => handleTileClick(tile);
+                pool.appendChild(tile);
+            });
+        }
+
+        function handleTileClick(tile) {
+            const target = document.getElementById('target');
+            const pool = document.getElementById('pool');
+            const feedback = document.getElementById('feedback');
+            const data = puzzleData[currentIdx];
+
+            // Wenn das Wort bereits im Target ist, zurück in den Pool (Reset der Reihe)
+            if (tile.parentElement === target) {
+                pool.appendChild(tile);
+                tile.classList.remove('correct-pos', 'wrong-pos');
+                validateAllTiles();
+                return;
+            }
+
+            // Wort ins Target verschieben
+            target.appendChild(tile);
+            
+            // Sofortiges Feedback für dieses Wort
+            const currentPosition = target.children.length - 1;
+            if (tile.textContent === data.words[currentPosition]) {
+                tile.classList.add('correct-pos');
+                tile.classList.remove('wrong-pos');
+                feedback.textContent = "Gut! Das passt.";
+                feedback.style.color = "var(--success)";
+            } else {
+                tile.classList.add('wrong-pos');
+                tile.classList.remove('correct-pos');
+                feedback.textContent = "Falsche Stelle! Probier es anders.";
+                feedback.style.color = "var(--error)";
+            }
+
+            // Prüfen ob Satz fertig und korrekt
+            checkFinalState();
+        }
+
+        function validateAllTiles() {
+            const target = document.getElementById('target');
+            const data = puzzleData[currentIdx];
+            let allCorrect = true;
+
+            Array.from(target.children).forEach((tile, index) => {
+                if (tile.textContent === data.words[index]) {
+                    tile.classList.add('correct-pos');
+                    tile.classList.remove('wrong-pos');
+                } else {
+                    tile.classList.add('wrong-pos');
+                    tile.classList.remove('correct-pos');
+                    allCorrect = false;
+                }
+            });
+            
+            if (target.children.length === 0) {
+                document.getElementById('feedback').textContent = "Wähle das erste Wort.";
+            }
+        }
+
+        function checkFinalState() {
+            const target = document.getElementById('target');
+            const pool = document.getElementById('pool');
+            const data = puzzleData[currentIdx];
+
+            if (pool.children.length === 0) {
+                const currentSentence = Array.from(target.children).map(t => t.textContent).join(' ');
+                const goalSentence = data.words.join(' ');
+
+                if (currentSentence === goalSentence) {
+                    document.getElementById('feedback').textContent = "Hervorragend! Der Satz ist korrekt.";
+                    document.getElementById('next-btn').style.display = "inline-block";
+                }
+            }
+        }
+
+        function nextSentence() {
+            currentIdx++;
+            if (currentIdx < puzzleData.length) {
+                initPuzzle();
+            } else {
+                finishGame();
+            }
+        }
+
+        function finishGame() {
+            document.getElementById('instruction').textContent = "Herzlichen Glückwunsch!";
+            document.getElementById('translation').textContent = "Du hast alle 8 Sätze gemeistert.";
+            document.getElementById('pool').style.display = "none";
+            document.getElementById('target').style.display = "none";
+            document.getElementById('feedback').textContent = "Du kennst dich jetzt bestens mit dem russischen 'что' aus!";
+            document.getElementById('next-btn').style.display = "none";
+        }
+
+        function restartGame() {
+            currentIdx = 0;
+            document.getElementById('pool').style.display = "flex";
+            document.getElementById('target').style.display = "flex";
+            document.getElementById('instruction').textContent = "Bilde den Satz:";
+            initPuzzle();
+        }
+
+        window.onload = initPuzzle;
+    </script>
+</body>
+</html>
